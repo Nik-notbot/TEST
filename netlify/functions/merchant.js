@@ -7,6 +7,11 @@ exports.handler = async function(event) {
     const API_TOKEN = process.env.MERCHANT_API_TOKEN;
     const API_URL = process.env.MERCHANT_API_URL;
 
+    // ЛОГ для дебага!
+    console.log("BODY:", body);
+    console.log("API_URL:", API_URL);
+    console.log("API_TOKEN exists:", !!API_TOKEN);
+
     const payload = {
       pricing: {
         local: {
@@ -22,6 +27,8 @@ exports.handler = async function(event) {
       cancelUrl: body.cancelUrl
     };
 
+    console.log("PAYLOAD:", payload);
+
     const response = await fetch(`${API_URL}/transaction/merchant`, {
       method: "POST",
       headers: {
@@ -31,7 +38,11 @@ exports.handler = async function(event) {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    console.log("RESPONSE:", text);
+
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
     if (response.ok && data.paymentUrl) {
       return { statusCode: 200, body: JSON.stringify({ paymentUrl: data.paymentUrl }) };
@@ -39,6 +50,7 @@ exports.handler = async function(event) {
       return { statusCode: 400, body: JSON.stringify({ error: data }) };
     }
   } catch (e) {
+    console.log("CRASH:", e);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
