@@ -5,7 +5,7 @@ exports.handler = async function(event) {
     const body = JSON.parse(event.body);
 
     const API_TOKEN = process.env.MERCHANT_API_TOKEN;
-    const API_URL = process.env.MERCHANT_API_URL || "https://api.merchant001.io/v1";
+    const API_URL = process.env.MERCHANT_API_URL;
 
     const payload = {
       pricing: {
@@ -14,9 +14,7 @@ exports.handler = async function(event) {
           currency: body.currency,
         }
       },
-      selectedProvider: {
-        method: "ALL"
-      },
+      selectedProvider: { method: "ALL" },
       clientId: body.clientId,
       invoiceId: body.invoiceId,
       callbackUrl: body.callbackUrl,
@@ -36,23 +34,15 @@ exports.handler = async function(event) {
     const data = await response.json();
 
     if (response.ok && data.paymentUrl) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ paymentUrl: data.paymentUrl }),
-      };
+      return { statusCode: 200, body: JSON.stringify({ paymentUrl: data.paymentUrl }) };
     } else {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: data }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: data }) };
     }
   } catch (e) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: e.message }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
+
 
 
 
