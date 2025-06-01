@@ -4,14 +4,18 @@ exports.handler = async function(event) {
   try {
     const body = JSON.parse(event.body);
 
+    // Приведение ключей body к нужным платежке именам (могут приходить с фронта иначе)
+    const clientId = body.clientId || (body.customer ? body.customer.email : undefined);
+    const invoiceId = body.invoiceId || body.description || undefined;
+    const callbackUrl = body.callbackUrl || body.callback_url || undefined;
+    const redirectUrl = body.redirectUrl || body.success_url || undefined;
+    const cancelUrl = body.cancelUrl || body.fail_url || undefined;
+
+    // Вытаскиваем переменные окружения
     const API_TOKEN = process.env.MERCHANT_API_TOKEN;
     const API_URL = process.env.MERCHANT_API_URL;
 
-    // ЛОГ для дебага!
-    console.log("BODY:", body);
-    console.log("API_URL:", API_URL);
-    console.log("API_TOKEN exists:", !!API_TOKEN);
-
+    // Собираем payload
     const payload = {
       pricing: {
         local: {
@@ -20,15 +24,17 @@ exports.handler = async function(event) {
         }
       },
       selectedProvider: { method: "ALL" },
-      clientId: body.clientId,
-      invoiceId: body.invoiceId,
-      callbackUrl: body.callbackUrl,
-      redirectUrl: body.redirectUrl,
-      cancelUrl: body.cancelUrl
+      clientId,
+      invoiceId,
+      callbackUrl,
+      redirectUrl,
+      cancelUrl
     };
 
+    // Логируем payload для отладки (можно убрать)
     console.log("PAYLOAD:", payload);
 
+    // Запрос в API платежки
     const response = await fetch(`${API_URL}/transaction/merchant`, {
       method: "POST",
       headers: {
@@ -38,9 +44,8 @@ exports.handler = async function(event) {
       body: JSON.stringify(payload)
     });
 
+    // Парсим ответ
     const text = await response.text();
-    console.log("RESPONSE:", text);
-
     let data;
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
@@ -50,7 +55,6 @@ exports.handler = async function(event) {
       return { statusCode: 400, body: JSON.stringify({ error: data }) };
     }
   } catch (e) {
-    console.log("CRASH:", e);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
