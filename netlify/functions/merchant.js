@@ -4,7 +4,7 @@ exports.handler = async function(event) {
   try {
     const body = JSON.parse(event.body);
 
-    // Приведение ключей body к нужным платежке именам (могут приходить с фронта иначе)
+    // Приведение ключей body к нужным платежке именам
     const clientId = body.clientId || (body.customer ? body.customer.email : undefined);
     const invoiceId = body.invoiceId || body.description || undefined;
     const callbackUrl = body.callbackUrl || body.callback_url || undefined;
@@ -15,7 +15,10 @@ exports.handler = async function(event) {
     const API_TOKEN = process.env.MERCHANT_API_TOKEN;
     const API_URL = process.env.MERCHANT_API_URL;
 
-    // Собираем payload
+    // Логируем переменные (для отладки, потом убери)
+    console.log("API_URL:", API_URL);
+    console.log("API_TOKEN exists:", !!API_TOKEN);
+
     const payload = {
       pricing: {
         local: {
@@ -31,7 +34,7 @@ exports.handler = async function(event) {
       cancelUrl
     };
 
-    // Логируем payload для отладки (можно убрать)
+    // Логируем payload для отладки
     console.log("PAYLOAD:", payload);
 
     // Запрос в API платежки
@@ -44,10 +47,17 @@ exports.handler = async function(event) {
       body: JSON.stringify(payload)
     });
 
-    // Парсим ответ
+    // Получаем текст ответа и пытаемся распарсить как JSON
     const text = await response.text();
     let data;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+
+    // Логируем ответ (важно для диагностики!)
+    console.log("RAW RESPONSE:", text);
 
     if (response.ok && data.paymentUrl) {
       return { statusCode: 200, body: JSON.stringify({ paymentUrl: data.paymentUrl }) };
@@ -55,9 +65,11 @@ exports.handler = async function(event) {
       return { statusCode: 400, body: JSON.stringify({ error: data }) };
     }
   } catch (e) {
+    console.error("ERROR:", e);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
+
 
 
 
